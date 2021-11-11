@@ -6,6 +6,7 @@ import (
 	"io"
 	"monkey/lexer"
 	"monkey/parser"
+	"monkey/object"
 	"monkey/evaluator"
 )
 
@@ -22,7 +23,6 @@ const MONKEY_FACE = `            __,__
         '._ '-=-' _.'
            '-----'
 `
-
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
