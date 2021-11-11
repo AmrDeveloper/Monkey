@@ -1,6 +1,8 @@
 package evaulator
 
 import (
+	"fmt"
+	"unicode/utf8"
 	"monkey/object"
 )
 
@@ -11,6 +13,16 @@ var builtins = map[string]*object.Builtin {
 	"rest": 			arrayRest,
 	"push":				arrayPush,
 }
+
+var puts = &object.Builtin {
+	Fn: func(args ...object.Object) object.Object {
+		for _, arg := range args {
+			fmt.Println(arg.Inspect())
+		}
+		return NULL
+	},
+}
+
 
 var length = &object.Builtin {
 	Fn: func(args ...object.Object) object.Object {
