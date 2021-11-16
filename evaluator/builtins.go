@@ -2,7 +2,6 @@ package evaulator
 
 import (
 	"fmt"
-	"unicode/utf8"
 	"monkey/object"
 )
 
