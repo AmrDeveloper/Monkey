@@ -6,19 +6,21 @@ import (
 	"strings"
 	"hash/fnv"
 	"monkey/ast"
+	"monkey/code"
 )
 
 const (
-	INTEGER_OBJ 		= "INTEGER"
-	BOOLEAN_OBJ 		= "BOOLEAN"
-	STRING_OBJ			= "STRING"
-	ARRAY_OBJ			= "ARRAY"
-	HASH_OBJ			= "HASH"
-	NULL_OBJ			= "NULL"
-	FUNCTION_OBJ 		= "FUNCTION"
-	BUILTIN_OBJ			= "BUILTIN"
-	RETURN_VALUE_OBJ 	= "RETURN_VALUE"
-	ERROR_OBJ 			= "ERROR"
+	INTEGER_OBJ 			= "INTEGER"
+	BOOLEAN_OBJ 			= "BOOLEAN"
+	STRING_OBJ				= "STRING"
+	ARRAY_OBJ				= "ARRAY"
+	HASH_OBJ				= "HASH"
+	NULL_OBJ				= "NULL"
+	FUNCTION_OBJ 			= "FUNCTION"
+	BUILTIN_OBJ				= "BUILTIN"
+	COMPILED_FUNCTION_OBJ 	= "COMPILED_FUNCTION_OBJ"
+	RETURN_VALUE_OBJ 		= "RETURN_VALUE"
+	ERROR_OBJ 				= "ERROR"
 )
 
 type ObjectType string
@@ -218,4 +220,16 @@ func (b *Builtin) Type() ObjectType {
 
 func (b *Builtin) Inspect() string {
 	return "builtin function"
+}
+
+type CompiledFunction struct {
+	Instructions		code.Instructions
+}
+
+func (cf *CompiledFunction) Type() ObjectType {
+	return COMPILED_FUNCTION_OBJ
+}
+
+func (cf *CompiledFunction) Inspect() string {
+	return fmt.Sprintf("CompiledFunction[%p]", cf)
 }
