@@ -224,6 +224,7 @@ func (b *Builtin) Inspect() string {
 
 type CompiledFunction struct {
 	Instructions		code.Instructions
+	NumLocals			int
 }
 
 func (cf *CompiledFunction) Type() ObjectType {

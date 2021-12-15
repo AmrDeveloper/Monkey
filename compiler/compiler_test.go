@@ -78,7 +78,7 @@ func TestIntegerArithmetic(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestBooleanExpressions(t *testing.T) {
@@ -170,7 +170,7 @@ func TestBooleanExpressions(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestConditionals(t *testing.T) {
@@ -220,7 +220,7 @@ func TestConditionals(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestGlobalLetStatements(t *testing.T) {
@@ -266,7 +266,7 @@ func TestGlobalLetStatements(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestStringExpressions(t *testing.T) {
@@ -290,7 +290,7 @@ func TestStringExpressions(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestArrayLiterals(t *testing.T) {
@@ -332,7 +332,7 @@ func TestArrayLiterals(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestHashLiterals(t *testing.T) {
@@ -376,7 +376,7 @@ func TestHashLiterals(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestIndexExpression(t *testing.T) {
@@ -411,7 +411,7 @@ func TestIndexExpression(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestFunctions(t *testing.T) {
@@ -481,7 +481,7 @@ func TestFunctions(t *testing.T) {
 		},
 	}
 
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestFunctionCalls(t *testing.T) {
@@ -522,54 +522,143 @@ func TestFunctionCalls(t *testing.T) {
 			},
 		},
 	}
-	runCompilerTest(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func TestCompilerScopes(t *testing.T) {
 	compiler := New()
 	if compiler.scopeIndex != 0 {
-		t.Errorf("scopeIndex wrong. got=%d, want=%d", compiler.scopeIndex, 0)
+		t.Errorf("scopeIndex wrong. Got: %d. Expected: %d", compiler.scopeIndex, 0)
 	}
+	globalSymbolTable := compiler.symbolTable
 
 	compiler.emit(code.OpMul)
 
 	compiler.enterScope()
 	if compiler.scopeIndex != 1 {
-		t.Errorf("scopeIndex wrong. got=%d, want=%d", compiler.scopeIndex, 1)
+		t.Errorf("scopeIndex wrong. Got: %d. Expected: %d", compiler.scopeIndex, 1)
 	}
 
 	compiler.emit(code.OpSub)
+
 	if len(compiler.scopes[compiler.scopeIndex].instructions) != 1 {
-		t.Errorf("instructions length wrong. got=%d", len(compiler.scopes[compiler.scopeIndex].instructions))
+		t.Errorf("instructions length wrong. Got: %d", len(compiler.scopes[compiler.scopeIndex].instructions))
 	}
 
 	last := compiler.scopes[compiler.scopeIndex].lastInstruction
 	if last.Opcode != code.OpSub {
-		t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d", last.Opcode, code.OpSub)
+		t.Errorf("lastInstruction.Opcode wrong. Got: %d. Expected: %d", last.Opcode, code.OpSub)
+	}
+
+	if compiler.symbolTable.Outer != globalSymbolTable {
+		t.Errorf("Compiler did not enclose symbolTable")
 	}
 
 	compiler.leaveScope()
 	if compiler.scopeIndex != 0 {
-		t.Errorf("scopeIndex wrong. got=%d, want=%d", compiler.scopeIndex, 0)
+		t.Errorf("scopeIndex wrong. Got: %d. Expected: %d", compiler.scopeIndex, 0)
+	}
+
+	if compiler.symbolTable != globalSymbolTable {
+		t.Errorf("Compiler did not restore global symbol table")
+	}
+
+	if compiler.symbolTable.Outer != nil {
+		t.Errorf("Compiler modified global symbol table incorrectly")
 	}
 
 	compiler.emit(code.OpAdd)
+
 	if len(compiler.scopes[compiler.scopeIndex].instructions) != 2 {
-		t.Errorf("instructions length wrong. got=%d", len(compiler.scopes[compiler.scopeIndex].instructions))
+		t.Errorf("Instructions length wrong. Got: %d", len(compiler.scopes[compiler.scopeIndex].instructions))
 	}
 
 	last = compiler.scopes[compiler.scopeIndex].lastInstruction
 	if last.Opcode != code.OpAdd {
-		t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d", last.Opcode, code.OpAdd)
+		t.Errorf("lastInstruction.Opcode wrong. Got: %d. Expected: %d", last.Opcode, code.OpAdd)
 	}
 
 	previous := compiler.scopes[compiler.scopeIndex].previousInstruction
 	if previous.Opcode != code.OpMul {
-		t.Errorf("previousInstruction.Opcode wrong. got=%d, want=%d", previous.Opcode, code.OpMul)
+		t.Errorf("previousInstruction.Opcode wrong. Got: %d. Expected: %d", previous.Opcode, code.OpMul)
 	}
 }
 
-func runCompilerTest(t *testing.T, tests[]compilerTestCase) {
+
+func TestletStatementScopes(t *testing.T) {
+	tests := []compilerTestCase {
+		{
+			input: `
+			let num = 55;
+			fn() { num }
+			`,
+			expectedConstants: []interface{} {
+				55,
+				[]code.Instructions {
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions {
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+			fn() {
+				let num = 55;
+				num
+			}
+			`,
+			expectedConstants: []interface{} {
+				55,
+				[]code.Instructions {
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions {
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+			fn() {
+				let a = 55;
+				let b = 77;
+				a + b
+			}
+			`,
+			expectedConstants: []interface{} {
+				55,
+				77,
+				[]code.Instructions {
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpSetLocal, 1),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions {
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+	runCompilerTests(t, tests)
+}
+
+func runCompilerTests(t *testing.T, tests[]compilerTestCase) {
 	t.Helper()
 
 	for _, tt := range tests {
